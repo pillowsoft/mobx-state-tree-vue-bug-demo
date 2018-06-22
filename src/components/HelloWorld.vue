@@ -1,60 +1,108 @@
 <template>
   <div class="hello">
-    <h1>{{ msg }}</h1>
     <p>
-      For guide and recipes on how to configure / customize this project,<br>
-      check out the
-      <a href="https://cli.vuejs.org" target="_blank">vue-cli documentation</a>.
+     Click on each button to test mobx and mobx-state-tree for updates.
     </p>
-    <h3>Installed CLI Plugins</h3>
-    <ul>
-      <li><a href="https://github.com/vuejs/vue-cli/tree/dev/packages/%40vue/cli-plugin-babel" target="_blank">babel</a></li>
-      <li><a href="https://github.com/vuejs/vue-cli/tree/dev/packages/%40vue/cli-plugin-typescript" target="_blank">typescript</a></li>
-      <li><a href="https://github.com/vuejs/vue-cli/tree/dev/packages/%40vue/cli-plugin-pwa" target="_blank">pwa</a></li>
-      <li><a href="https://github.com/vuejs/vue-cli/tree/dev/packages/%40vue/cli-plugin-unit-jest" target="_blank">unit-jest</a></li>
-      <li><a href="https://github.com/vuejs/vue-cli/tree/dev/packages/%40vue/cli-plugin-e2e-cypress" target="_blank">e2e-cypress</a></li>
-    </ul>
-    <h3>Essential Links</h3>
-    <ul>
-      <li><a href="https://vuejs.org" target="_blank">Core Docs</a></li>
-      <li><a href="https://forum.vuejs.org" target="_blank">Forum</a></li>
-      <li><a href="https://chat.vuejs.org" target="_blank">Community Chat</a></li>
-      <li><a href="https://twitter.com/vuejs" target="_blank">Twitter</a></li>
-    </ul>
-    <h3>Ecosystem</h3>
-    <ul>
-      <li><a href="https://router.vuejs.org" target="_blank">vue-router</a></li>
-      <li><a href="https://vuex.vuejs.org" target="_blank">vuex</a></li>
-      <li><a href="https://github.com/vuejs/vue-devtools#vue-devtools" target="_blank">vue-devtools</a></li>
-      <li><a href="https://vue-loader.vuejs.org" target="_blank">vue-loader</a></li>
-      <li><a href="https://github.com/vuejs/awesome-vue" target="_blank">awesome-vue</a></li>
-    </ul>
+	<p><button @click="mobxStateTreeClick">mobx-state-tree</button>mobx-state-tree says (should toggle): {{mstState.todo.done}}</p>
+	<p><button @click="mobxClick">mobx</button>mobx says (should increment): {{mobxState.age}}</p>
   </div>
 </template>
 
 <script lang="ts">
 import { Component, Prop, Vue } from 'vue-property-decorator';
+import { Observer } from 'mobx-vue';
+import { action, computed, observable } from 'mobx';
+import { types, onSnapshot } from 'mobx-state-tree';
 
+const Todo = types
+	.model('Todo', {
+		title: types.string,
+		done: false
+	})
+	.actions(self => ({
+		toggle() {
+			self.done = !self.done;
+		}
+	}));
+
+const Store = types.model('Store', {
+	todos: types.array(Todo),
+	todo: Todo
+});
+
+// create an instance from a snapshot
+const theMstState = Store.create({
+	todos: [
+		{
+			title: 'Get coffee'
+		}
+	],
+	todo: {
+		title: 'Get stuff'
+	}
+});
+
+// listen to new snapshots
+// onSnapshot(theMstState, snapshot => {
+// 	console.info('todo updated:', snapshot);
+// });
+
+class ViewModel {
+	@observable age = 10;
+	@observable users = [];
+
+	@computed
+	get computedAge() {
+		return this.age + 1;
+	}
+
+	@action.bound
+	setAge() {
+		this.age++;
+	}
+}
+
+const theMobxState = new ViewModel();
+
+@Observer
 @Component
 export default class HelloWorld extends Vue {
-  @Prop() private msg!: string;
+	mstState = theMstState;
+	mobxState = theMobxState;
+
+	mobxClick() {
+		this.mobxState.setAge();
+		// console.log('mobx click!');
+	}
+
+	mobxStateTreeClick() {
+		// this.mstState.todo.toggle();
+		// console.log('mobx-state-tree click!');
+	}
 }
 </script>
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped lang="scss">
+button {
+	padding: 10px;
+	margin: 20px;
+	height: 40px;
+	width: 200px;
+	text-align: left;
+}
 h3 {
-  margin: 40px 0 0;
+	margin: 40px 0 0;
 }
 ul {
-  list-style-type: none;
-  padding: 0;
+	list-style-type: none;
+	padding: 0;
 }
 li {
-  display: inline-block;
-  margin: 0 10px;
+	display: inline-block;
+	margin: 0 10px;
 }
 a {
-  color: #42b983;
+	color: #42b983;
 }
 </style>
